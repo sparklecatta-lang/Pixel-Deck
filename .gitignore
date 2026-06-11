@@ -1,0 +1,23 @@
+node_modules/
+release/
+dist/
+out/
+
+# 用户数据与自定义内容
+assets/savers/
+outputs/
+work/
+
+# 本地调试产物
+_*.js
+_*.png
+*.log
+npm-debug.log*
+
+# 本地启动脚本
+启动.bat
+启动.vbs
+
+# 系统文件
+.DS_Store
+Thumbs.db

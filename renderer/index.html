@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: file:; media-src 'self' data: file:; font-src 'self' file:; style-src 'self' 'unsafe-inline'; script-src 'self';" />
+  <title>Pixel Deck</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- 整机 -->
+  <div id="device">
+    <!-- 顶部品牌 -->
+    <span class="brand"><img class="logo" src="../assets/pixel-deck-logo.png" alt="" /><span class="brand-text">Pixel Deck</span></span>
+
+    <!-- 左侧分页轨 -->
+    <div id="pagerail"></div>
+
+    <!-- 按键面板 -->
+    <div id="screen-well">
+      <div id="grid"></div>
+      <canvas id="saver-canvas"></canvas>
+    </div>
+
+    <!-- 菜单按钮（设置 / 屏保 / 分页）-->
+    <div id="badge" title="菜单：设置 / 屏保 / 分页">☰</div>
+
+    <!-- 全局 CRT 覆盖 -->
+    <div id="crt-overlay"></div>
+  </div>
+
+  <!-- 隐藏视频源（供屏保逐帧取样）-->
+  <video id="saver-video" muted loop playsinline></video>
+
+  <!-- 像素右键菜单 -->
+  <div id="ctxmenu" class="hidden">
+    <div class="ctxitem" data-act="edit"><span class="chk" id="ctx-editchk"></span>编辑模式</div>
+    <div class="ctxsep"></div>
+    <div class="ctxitem" data-act="addpage">添加一页</div>
+    <div class="ctxitem" data-act="delpage">删除本页…</div>
+    <div class="ctxsep"></div>
+    <div class="ctxitem" data-act="saver">屏保设置…</div>
+    <div class="ctxitem" data-act="saverplay">立即启动屏保</div>
+    <div class="ctxitem" data-act="settings">设置…</div>
+    <div class="ctxsep"></div>
+    <div class="ctxitem" data-act="min">最小化</div>
+    <div class="ctxitem" data-act="tray">收到托盘</div>
+    <div class="ctxsep"></div>
+    <div class="ctxitem danger" data-act="quit">退出</div>
+  </div>
+
+  <!-- 绑定弹窗 -->
+  <div id="modal" class="hidden">
+    <div class="panel">
+      <div class="panel-title">绑定按钮 <span id="modal-idx"></span></div>
+
+      <div class="row">
+        <label>类型</label>
+        <div class="seg">
+          <button data-type="app" class="segbtn active">程序</button>
+          <button data-type="url" class="segbtn">网页</button>
+          <button data-type="file" class="segbtn">文件/夹</button>
+          <button data-type="widget" class="segbtn">组件</button>
+        </div>
+      </div>
+
+      <div class="row" id="widget-row" style="display:none">
+        <label>组件</label>
+        <div class="seg">
+          <button data-wk="clock" class="wkbtn active">时钟</button>
+          <button data-wk="system" class="wkbtn">系统</button>
+          <button data-wk="weather" class="wkbtn">天气</button>
+        </div>
+      </div>
+
+      <div class="row" id="target-row">
+        <label>目标</label>
+        <input id="f-target" type="text" placeholder="exe 路径 / 网址 / 文件路径" />
+        <button id="f-browse" class="minibtn">浏览…</button>
+      </div>
+
+      <div class="row">
+        <label>名称</label>
+        <input id="f-label" type="text" placeholder="按钮显示文字" />
+      </div>
+
+      <div class="row" id="icon-row">
+        <label>图标</label>
+        <div class="iconprev"><canvas id="f-iconcanvas" width="64" height="64"></canvas></div>
+        <button id="f-pickicon" class="minibtn">自定义…</button>
+        <button id="f-autoicon" class="minibtn">自动</button>
+      </div>
+
+      <div class="modal-actions">
+        <button id="f-clear" class="minibtn danger">清除绑定</button>
+        <span style="flex:1"></span>
+        <button id="f-cancel" class="minibtn">取消</button>
+        <button id="f-save" class="minibtn primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 设置弹窗 -->
+  <div id="settings" class="hidden">
+    <div class="panel">
+      <div class="panel-title">设置</div>
+      <label class="check"><input type="checkbox" id="s-autolaunch" /> 开机自动启动</label>
+      <div class="row">
+        <label>像素度</label>
+        <input id="s-pixel" type="range" min="10" max="48" />
+        <span id="s-pixelval"></span>
+      </div>
+      <div class="hint">数值越小越像素化（图标降采样目标分辨率）</div>
+      <div class="modal-actions">
+        <span style="flex:1"></span>
+        <button id="s-cancel" class="minibtn">取消</button>
+        <button id="s-save" class="minibtn primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 屏保面板 -->
+  <div id="saver-ui" class="hidden">
+    <div class="panel">
+      <div class="panel-title">屏保</div>
+      <label class="check"><input type="checkbox" id="sv-enabled" /> 空闲时自动播放屏保</label>
+      <div class="row"><label>空闲</label><input id="sv-idle" type="range" min="15" max="600" step="5" /><span id="sv-idleval"></span></div>
+      <div class="row"><label>每段</label><input id="sv-rotate" type="range" min="5" max="60" /><span id="sv-rotateval"></span></div>
+      <div class="hint">勾选要加入循环的屏保（内置 + 你自己的视频）</div>
+      <div class="sv-list" id="sv-list"></div>
+      <div class="modal-actions">
+        <button id="sv-add" class="minibtn">+ 添加视频</button>
+        <button id="sv-template" class="minibtn">导出模板图</button>
+        <button id="sv-preview" class="minibtn">预览</button>
+        <span style="flex:1"></span>
+        <button id="sv-close" class="minibtn primary">完成</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

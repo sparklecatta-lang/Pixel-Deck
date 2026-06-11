@@ -1,0 +1,72 @@
+{
+  "name": "pixel-deck",
+  "productName": "Pixel Deck",
+  "version": "1.0.0",
+  "description": "像素风格桌面快捷面板，带 5×3 按键、像素图标、组件按钮和内置屏保。",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check main.js && node --check preload.js && node --check renderer/renderer.js",
+    "build:win": "electron-builder --win portable --x64",
+    "build:mac": "electron-builder --mac zip --x64",
+    "build": "npm run check && npm run build:win && npm run build:mac"
+  },
+  "author": "chebao2016",
+  "license": "MIT",
+  "devDependencies": {
+    "@electron/packager": "^20.0.1",
+    "electron": "^33.0.0",
+    "electron-builder": "^26.15.2"
+  },
+  "build": {
+    "appId": "com.chebao.pixeldeck",
+    "productName": "Pixel Deck",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "assets/pixel.woff2",
+      "assets/pixel-label.woff2",
+      "assets/pixel-cjk.ttf",
+      "assets/pixel-deck-logo.png",
+      "assets/press.mp3",
+      "assets/release.mp3",
+      "icon.ico",
+      "package.json",
+      "!assets/savers/**",
+      "!outputs/**",
+      "!work/**",
+      "!_*.js",
+      "!_*.png",
+      "!启动.*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icon.ico",
+      "artifactName": "Pixel-Deck-${version}-Windows-x64.exe"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "artifactName": "Pixel-Deck-${version}-macOS-x64.${ext}"
+    }
+  }
+}
