@@ -19,8 +19,8 @@ Pixel Deck 是一个像素风格的桌面快捷面板。它像一个迷你 Strea
 
 最新版本可以在 GitHub Release 下载：
 
-- [Windows x64 便携版 exe](https://github.com/sparklecatta-lang/Pixel-Deck/releases/download/v1.0.0/Pixel-Deck-1.0.0-Windows-x64.exe)
-- [macOS x64 zip](https://github.com/sparklecatta-lang/Pixel-Deck/releases/download/v1.0.0/Pixel-Deck-1.0.0-macOS-x64.zip)
+- [Windows x64 便携版 exe](https://github.com/sparklecatta-lang/Pixel-Deck/releases/download/v1.0.1/Pixel-Deck-1.0.1-Windows-x64.exe)
+- [macOS x64 zip](https://github.com/sparklecatta-lang/Pixel-Deck/releases/download/v1.0.1/Pixel-Deck-1.0.1-macOS-x64.zip)
 
 也可以查看完整发布页：
 

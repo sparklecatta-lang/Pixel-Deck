@@ -1,7 +1,7 @@
 {
   "name": "pixel-deck",
   "productName": "Pixel Deck",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "像素风格桌面快捷面板，带 5×3 按键、像素图标、组件按钮和内置屏保。",
   "main": "main.js",
   "scripts": {
