@@ -7,8 +7,12 @@ const COLS = 5;
 const ROWS = 3;
 const CELLS = COLS * ROWS;
 
-const CONFIG_PATH = path.join(app.getPath('userData'), 'config.json');
-const SAVER_DIR = path.join(app.getPath('userData'), 'savers');
+const USER_DATA_DIR = app.getPath('userData');
+const CONFIG_PATH = path.join(USER_DATA_DIR, 'config.json');
+const SAVER_DIR = path.join(USER_DATA_DIR, 'savers');
+const LEGACY_USER_DATA_DIRS = [
+  path.join(app.getPath('appData'), 'pixel-streamdeck')
+];
 const VIDEO_EXT = ['.mp4', '.webm', '.mov', '.m4v', '.ogg'];
 const BUILTIN_SAVERS = ['matrix', 'starfield', 'life', 'plasma', 'fireworks', 'pong', 'equalizer', 'city', 'tunnel'];
 
@@ -34,10 +38,99 @@ function defaultConfig() {
   };
 }
 
+function readJson(file) {
+  try { return JSON.parse(fs.readFileSync(file, 'utf8')); }
+  catch { return null; }
+}
+
+function countUsedButtons(cfg) {
+  if (!cfg || !Array.isArray(cfg.pages)) return 0;
+  return cfg.pages.reduce((sum, page) => sum + (Array.isArray(page) ? page.filter(Boolean).length : 0), 0);
+}
+
+function hasCustomSavers(cfg) {
+  return !!(cfg && cfg.saver && Array.isArray(cfg.saver.videos) && cfg.saver.videos.length);
+}
+
+function shouldPreferLegacyConfig(current, legacy) {
+  if (!legacy) return false;
+  const currentUsed = countUsedButtons(current);
+  const legacyUsed = countUsedButtons(legacy);
+  if (!current) return true;
+  if (currentUsed === 0 && legacyUsed > 0) return true;
+  if (!hasCustomSavers(current) && hasCustomSavers(legacy)) return true;
+  return false;
+}
+
+function uniqueDestPath(dir, base) {
+  const ext = path.extname(base);
+  const stem = path.basename(base, ext);
+  let dest = path.join(dir, base);
+  let i = 1;
+  while (fs.existsSync(dest)) {
+    dest = path.join(dir, `${stem}-${i}${ext}`);
+    i += 1;
+  }
+  return dest;
+}
+
+function migrateSaverFiles(cfg) {
+  if (!cfg || !cfg.saver || !Array.isArray(cfg.saver.videos)) return cfg;
+  try { fs.mkdirSync(SAVER_DIR, { recursive: true }); } catch {}
+  for (const v of cfg.saver.videos) {
+    if (!v || !v.file) continue;
+    try {
+      const src = path.resolve(v.file);
+      if (!fs.existsSync(src)) continue;
+      const insideSaverDir = path.dirname(src).toLowerCase() === SAVER_DIR.toLowerCase();
+      if (insideSaverDir) continue;
+      const dest = uniqueDestPath(SAVER_DIR, path.basename(src));
+      fs.copyFileSync(src, dest);
+      v.file = dest;
+    } catch {}
+  }
+  return cfg;
+}
+
+function copyLegacySaverDir(legacyDir) {
+  const srcDir = path.join(legacyDir, 'savers');
+  try {
+    if (!fs.existsSync(srcDir)) return;
+    fs.mkdirSync(SAVER_DIR, { recursive: true });
+    for (const ent of fs.readdirSync(srcDir, { withFileTypes: true })) {
+      if (!ent.isFile()) continue;
+      if (!VIDEO_EXT.includes(path.extname(ent.name).toLowerCase())) continue;
+      const src = path.join(srcDir, ent.name);
+      const dest = path.join(SAVER_DIR, ent.name);
+      if (!fs.existsSync(dest)) fs.copyFileSync(src, dest);
+    }
+  } catch {}
+}
+
+function migrateLegacyConfigIfNeeded() {
+  const current = readJson(CONFIG_PATH);
+  for (const dir of LEGACY_USER_DATA_DIRS) {
+    const legacyPath = path.join(dir, 'config.json');
+    const legacy = readJson(legacyPath);
+    if (!shouldPreferLegacyConfig(current, legacy)) continue;
+    try {
+      fs.mkdirSync(path.dirname(CONFIG_PATH), { recursive: true });
+      if (fs.existsSync(CONFIG_PATH)) {
+        const stamp = new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
+        fs.copyFileSync(CONFIG_PATH, `${CONFIG_PATH}.bak-before-legacy-migration-${stamp}`);
+      }
+      copyLegacySaverDir(dir);
+      const migrated = migrateSaverFiles(legacy);
+      fs.writeFileSync(CONFIG_PATH, JSON.stringify(migrated, null, 2), 'utf8');
+      return migrated;
+    } catch {}
+  }
+  return current;
+}
+
 function loadConfig() {
-  let cfg;
-  try { cfg = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8')); }
-  catch { return defaultConfig(); }
+  let cfg = migrateLegacyConfigIfNeeded();
+  if (!cfg) return defaultConfig();
   const def = defaultConfig();
   // 旧版迁移：扁平 buttons -> pages[0]
   if (Array.isArray(cfg.buttons) && !Array.isArray(cfg.pages)) cfg.pages = [cfg.buttons];
